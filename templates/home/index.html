@@ -1,0 +1,123 @@
+{% extends 'base/base.html' %}
+
+{% block content %}
+
+{% load static %}
+<div class="loading">
+   <p>Loading Videos</p>
+</div>
+<header class="header">
+    <h3>Filter Videos by</h3>
+    <div class="filter-widget">
+     <div class="filter-container">
+         <label>Date:</Label>
+         <input type="date" class="date-filter"/>
+       </div>
+       <div class="filter-container">
+        <label>Name:</Label>
+        <input type="text" class="name-filter"/>
+       </div>
+       <div class="filter-container">
+        <label>Content type:</Label>
+        <input type="text" class="content-filter"/>
+       </div>
+       <div class="filter-container">
+        <label>File Id:</Label>
+        <input type="number"class="id-filter"/>
+       </div>
+    </div>
+ </header>
+
+ <div class="grid">
+ 
+ </div>
+ <script>
+    let mainData = []
+    const nameFilter = document.querySelector(".name-filter")
+    const idFilter = document.querySelector(".id-filter")
+    const contentFilter = document.querySelector(".content-filter")
+    const dateFilter = document.querySelector(".date-filter")
+
+    const useVideos = ()=>{
+        let videos = [] 
+        return [
+          ()=>videos,
+          (data)=>videos = data  
+        ]
+    }
+
+
+    const [getdata,setData] = useVideos()
+    const grid = document.querySelector('.grid')
+    const renderElement =(data)=>{
+    let template = ""
+      if(data.length > 0){
+        data.forEach(d=>{
+            template +=`
+            <div class="grid-content">
+                <div class="video-container">
+                  <video src="${d.path}" controls></video>
+                </div>
+                <div class="video-desc p-2">
+                   <h4>Video ID:${d.id}</h4>
+                   <h4>${d.name}</h4>
+                   <p>${d.content}</p>
+                   <b><small>${new Date(d.createdAt).toDateString()}</small></b>
+                </div>
+              </div>
+            `
+        })
+      }
+      grid.innerHTML = template
+    }
+
+    const getData = async ()=>{
+       const loader = document.querySelector(".loading")
+
+       loader.style.display = "flex"
+       const videos = await fetch("/cameras/videos/").then(d=>d.json())
+       loader.style.display = "none"
+
+       setData(videos.videos)
+       const data = getdata()
+       mainData = data
+       renderElement(data)
+
+    }
+    window.addEventListener("load",()=>{
+        getData()
+    })
+
+    const filterByDate=(date)=>{
+        const newData = mainData.filter((d)=>{
+            const d1 = new Date(d.createdAt).toISOString()
+            return d1.slice(0,d1.indexOf('T')) == date
+        })
+        renderElement(newData)
+    }
+    const filterById=(id)=>{
+        if(id){
+        const newData = mainData.filter((d)=>d.id == id)
+        renderElement(newData)
+        }
+        else{
+            renderElement(mainData)
+        }
+        
+    }
+    const filterByContent=(content)=>{
+        const newData = mainData.filter((d)=>d.content.toLowerCase().includes(content.toLowerCase()))
+        renderElement(newData)
+    }
+    const filterByName=(name)=>{
+        const newData = mainData.filter((d)=>d.name.toLowerCase().includes(name.toLowerCase()))
+        renderElement(newData)
+    }
+
+    dateFilter.addEventListener('input',(e)=>filterByDate(e.target.value))
+    idFilter.addEventListener('input',(e)=>filterById(e.target.value))
+    nameFilter.addEventListener('input',(e)=>filterByName(e.target.value))
+    contentFilter.addEventListener('input',(e)=>filterByContent(e.target.value))
+    
+ </script>
+{% endblock %}
